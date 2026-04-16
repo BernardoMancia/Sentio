@@ -4,17 +4,20 @@ set -e
 echo "=== App Triste - Deploy via Git ==="
 echo ""
 
-APP_DIR="/opt/app-triste"
+APP_DIR="/home/adm_luke/prod/apps/app-triste"
 DB_NAME="app_triste"
 DB_USER="apptriste"
 DB_PASS="$(openssl rand -base64 24)"
+API_KEY="$(openssl rand -base64 32)"
 REPO_URL="https://github.com/BernardoMancia/app-triste.git"
+SVC_USER="adm_luke"
 
 echo "[1/7] Instalando dependências do sistema..."
 apt-get update -qq
 apt-get install -y -qq git python3 python3-pip python3-venv postgresql postgresql-contrib > /dev/null 2>&1
 
 echo "[2/7] Clonando repositório..."
+mkdir -p "$(dirname $APP_DIR)"
 if [ -d "$APP_DIR" ]; then
     cd $APP_DIR
     git pull origin main
@@ -22,6 +25,7 @@ else
     git clone $REPO_URL $APP_DIR
     cd $APP_DIR
 fi
+chown -R $SVC_USER:$SVC_USER $APP_DIR
 
 echo "[3/7] Configurando PostgreSQL..."
 systemctl start postgresql
@@ -48,8 +52,13 @@ if [ ! -f "$APP_DIR/server/.env" ]; then
 DATABASE_URL=postgresql://$DB_USER:$DB_PASS@localhost:5432/$DB_NAME
 HOST=0.0.0.0
 PORT=2345
+API_KEY=$API_KEY
 EOF
-    echo "  .env criado com senha: $DB_PASS"
+    chown $SVC_USER:$SVC_USER $APP_DIR/server/.env
+    chmod 600 $APP_DIR/server/.env
+    echo "  .env criado"
+    echo "  DB Pass: $DB_PASS"
+    echo "  API Key: $API_KEY"
 else
     echo "  .env já existe, mantendo..."
 fi
@@ -65,7 +74,8 @@ After=network.target postgresql.service
 
 [Service]
 Type=simple
-User=root
+User=$SVC_USER
+Group=$SVC_USER
 WorkingDirectory=$APP_DIR/server
 Environment=PATH=$APP_DIR/server/venv/bin:/usr/bin
 ExecStart=$APP_DIR/server/venv/bin/uvicorn main:app --host 0.0.0.0 --port 2345
@@ -95,6 +105,6 @@ echo "    systemctl status app-triste"
 echo "    journalctl -u app-triste -f"
 echo ""
 echo "  Para atualizar:"
-echo "    cd /opt/app-triste && git pull origin main"
+echo "    cd $APP_DIR && git pull origin main"
 echo "    systemctl restart app-triste"
 echo "========================================="

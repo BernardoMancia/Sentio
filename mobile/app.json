@@ -34,6 +34,8 @@
       ]
     ],
     "extra": {
+      "apiUrl": "http://82.112.245.99:2345/api",
+      "apiKey": "",
       "eas": {
         "projectId": "90db8f96-48fa-4034-8d0e-46fb491fce15"
       }

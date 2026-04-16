@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  Vibration,
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
@@ -30,6 +31,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -75,7 +78,9 @@ async function registerForPushNotifications(deviceId: string) {
   try {
     const tokenData = await Notifications.getExpoPushTokenAsync();
     await registerPushToken(deviceId, tokenData.data);
-  } catch {}
+  } catch (err) {
+    console.warn("Falha ao registrar push token:", err);
+  }
 }
 
 interface TapEffect {
@@ -126,7 +131,8 @@ export default function App() {
         setCount(todayCount);
         tapCountRef.current = todayCount;
         setNewNeedleIndex(-1);
-      } catch {
+      } catch (err) {
+        console.warn("Falha ao carregar contagem:", err);
         setCount(0);
       }
 
@@ -168,7 +174,10 @@ export default function App() {
         const data = await registerTap(deviceId);
         tapCountRef.current = data.count_today;
         setCount(data.count_today);
-      } catch {}
+      } catch (err) {
+        console.warn("Falha ao registrar tap:", err);
+        Vibration.vibrate([0, 30, 50, 30]);
+      }
     },
     [deviceId]
   );

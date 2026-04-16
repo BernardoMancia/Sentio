@@ -1,6 +1,6 @@
 import asyncpg
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 BRT = ZoneInfo("America/Sao_Paulo")
@@ -140,7 +140,8 @@ async def get_monthly_summary(device_id: str, year: int, month: int):
     most_common_hour = None
     if hourly_distribution:
         h = hourly_distribution[0]["hour"]
-        most_common_hour = f"{h:02d}:00-{h+1:02d}:00"
+        next_h = (h + 1) % 24
+        most_common_hour = f"{h:02d}:00-{next_h:02d}:00"
 
     worst_day = None
     worst_day_count = 0

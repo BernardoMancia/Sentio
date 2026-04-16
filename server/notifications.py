@@ -16,21 +16,25 @@ MONTH_NAMES_PT = {
 
 
 async def send_push(expo_token: str, title: str, body: str):
-    async with httpx.AsyncClient() as client:
-        await client.post(
-            EXPO_PUSH_URL,
-            json={
-                "to": expo_token,
-                "title": title,
-                "body": body,
-                "sound": "default",
-                "priority": "high",
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            },
-        )
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                EXPO_PUSH_URL,
+                json={
+                    "to": expo_token,
+                    "title": title,
+                    "body": body,
+                    "sound": "default",
+                    "priority": "high",
+                },
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+            )
+            response.raise_for_status()
+    except Exception:
+        pass
 
 
 async def send_monthly_notifications():
@@ -44,7 +48,10 @@ async def send_monthly_notifications():
         device_id = token_row["device_id"]
         expo_token = token_row["expo_token"]
 
-        summary = await get_monthly_summary(device_id, year, month)
+        try:
+            summary = await get_monthly_summary(device_id, year, month)
+        except Exception:
+            continue
 
         if summary["total"] == 0:
             body = (

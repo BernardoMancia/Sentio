@@ -7,7 +7,6 @@ import Svg, {
   Stop,
   Circle,
   G,
-  Rect,
   LinearGradient as SvgLinearGradient,
 } from "react-native-svg";
 
@@ -23,10 +22,6 @@ export default function HeartBackground({ pulse, darkenLevel }: HeartBackgroundP
   const glowPulse = useRef(new Animated.Value(0.06)).current;
 
   const darkness = Math.min(darkenLevel / 30, 0.85);
-
-  const heartR = Math.max(0.30 - darkness * 0.35, 0.02);
-  const heartG = Math.max(0.18 - darkness * 0.18, 0.01);
-  const heartB = Math.max(0.30 - darkness * 0.15, 0.08);
 
   const strokeOpacity = Math.max(0.9 - darkness * 0.6, 0.15);
   const innerGlowOpacity = Math.max(0.15 - darkness * 0.14, 0.01);

@@ -94,6 +94,7 @@ export default function FloatingParticle({
 const styles = StyleSheet.create({
   particle: {
     position: "absolute",
+    left: "50%",
     bottom: "35%",
     shadowColor: "#a78bfa",
     shadowOffset: { width: 0, height: 0 },

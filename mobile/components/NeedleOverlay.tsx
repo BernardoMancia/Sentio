@@ -1,8 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, StyleSheet, View } from "react-native";
-import Svg, { Line, Circle, G } from "react-native-svg";
-
-const AnimatedG = Animated.createAnimatedComponent(G);
+import Svg, { Line, Circle } from "react-native-svg";
 
 const NEEDLE_POSITIONS = [
   { x: 180, y: 160, rotation: -25 },
@@ -37,108 +35,107 @@ const NEEDLE_POSITIONS = [
   { x: 175, y: 180, rotation: -32 },
 ];
 
+const SVG_SIZE = 340;
+const VIEWBOX_SIZE = 512;
+const SCALE = SVG_SIZE / VIEWBOX_SIZE;
+
 interface NeedleProps {
   x: number;
   y: number;
   rotation: number;
-  delay: number;
   isNew: boolean;
 }
 
-function Needle({ x, y, rotation, delay, isNew }: NeedleProps) {
-  const stabAnim = useRef(new Animated.Value(isNew ? -30 : 0)).current;
-  const opacityAnim = useRef(new Animated.Value(isNew ? 0 : 1)).current;
-  const shakeAnim = useRef(new Animated.Value(0)).current;
+function Needle({ x, y, rotation, isNew }: NeedleProps) {
+  const translateY = useRef(new Animated.Value(isNew ? -40 : 0)).current;
+  const opacity = useRef(new Animated.Value(isNew ? 0 : 1)).current;
+  const shakeX = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (isNew) {
-      const timeout = setTimeout(() => {
-        Animated.parallel([
-          Animated.spring(stabAnim, {
-            toValue: 0,
-            friction: 5,
-            tension: 300,
+      Animated.parallel([
+        Animated.spring(translateY, {
+          toValue: 0,
+          friction: 5,
+          tension: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        Animated.sequence([
+          Animated.timing(shakeX, {
+            toValue: 3,
+            duration: 50,
             useNativeDriver: true,
           }),
-          Animated.timing(opacityAnim, {
+          Animated.timing(shakeX, {
+            toValue: -2,
+            duration: 40,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shakeX, {
             toValue: 1,
-            duration: 100,
+            duration: 30,
             useNativeDriver: true,
           }),
-        ]).start(() => {
-          Animated.sequence([
-            Animated.timing(shakeAnim, {
-              toValue: 3,
-              duration: 50,
-              useNativeDriver: true,
-            }),
-            Animated.timing(shakeAnim, {
-              toValue: -2,
-              duration: 40,
-              useNativeDriver: true,
-            }),
-            Animated.timing(shakeAnim, {
-              toValue: 1,
-              duration: 30,
-              useNativeDriver: true,
-            }),
-            Animated.timing(shakeAnim, {
-              toValue: 0,
-              duration: 25,
-              useNativeDriver: true,
-            }),
-          ]).start();
-        });
-      }, delay);
-
-      return () => clearTimeout(timeout);
+          Animated.timing(shakeX, {
+            toValue: 0,
+            duration: 25,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
     }
   }, [isNew]);
 
-  const rad = (rotation * Math.PI) / 180;
-  const needleLength = 40;
-  const dx = Math.sin(rad) * needleLength;
-  const dy = -Math.cos(rad) * needleLength;
+  const screenX = x * SCALE;
+  const screenY = y * SCALE;
 
   return (
-    <G x={x} y={y} rotation={rotation} origin={`${x}, ${y}`}>
-      <Line
-        x1={0}
-        y1={-2}
-        x2={0}
-        y2={-38}
-        stroke="#c0c0c0"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        opacity={0.9}
-      />
-
-      <Line
-        x1={0}
-        y1={-2}
-        x2={0}
-        y2={5}
-        stroke="#e0e0e0"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        opacity={0.95}
-      />
-
-      <Circle
-        cx={0}
-        cy={-40}
-        r={4}
-        fill="#ff4444"
-        opacity={0.85}
-      />
-      <Circle
-        cx={-1}
-        cy={-41}
-        r={1.5}
-        fill="#ff8888"
-        opacity={0.6}
-      />
-    </G>
+    <Animated.View
+      style={[
+        styles.needleWrapper,
+        {
+          left: screenX - 25,
+          top: screenY - 50,
+          opacity,
+          transform: [
+            { translateY },
+            { translateX: shakeX },
+            { rotate: `${rotation}deg` },
+          ],
+        },
+      ]}
+    >
+      <Svg width={50} height={60} viewBox="0 0 50 60">
+        <Line
+          x1={25}
+          y1={18}
+          x2={25}
+          y2={56}
+          stroke="#c0c0c0"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          opacity={0.9}
+        />
+        <Line
+          x1={25}
+          y1={56}
+          x2={25}
+          y2={60}
+          stroke="#e0e0e0"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          opacity={0.95}
+        />
+        <Circle cx={25} cy={14} r={4} fill="#ff4444" opacity={0.85} />
+        <Circle cx={24} cy={13} r={1.5} fill="#ff8888" opacity={0.6} />
+      </Svg>
+    </Animated.View>
   );
 }
 
@@ -147,28 +144,26 @@ interface NeedleOverlayProps {
   newNeedleIndex: number;
 }
 
-export default function NeedleOverlay({ count, newNeedleIndex }: NeedleOverlayProps) {
-  const visibleNeedles = NEEDLE_POSITIONS.slice(0, Math.min(count, NEEDLE_POSITIONS.length));
+export default function NeedleOverlay({
+  count,
+  newNeedleIndex,
+}: NeedleOverlayProps) {
+  const visibleNeedles = NEEDLE_POSITIONS.slice(
+    0,
+    Math.min(count, NEEDLE_POSITIONS.length)
+  );
 
   return (
     <View style={styles.container} pointerEvents="none">
-      <Svg
-        width={340}
-        height={340}
-        viewBox="0 0 512 512"
-        style={styles.svg}
-      >
-        {visibleNeedles.map((pos, index) => (
-          <Needle
-            key={index}
-            x={pos.x}
-            y={pos.y}
-            rotation={pos.rotation}
-            delay={0}
-            isNew={index === newNeedleIndex}
-          />
-        ))}
-      </Svg>
+      {visibleNeedles.map((pos, index) => (
+        <Needle
+          key={index}
+          x={pos.x}
+          y={pos.y}
+          rotation={pos.rotation}
+          isNew={index === newNeedleIndex}
+        />
+      ))}
     </View>
   );
 }
@@ -184,7 +179,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 3,
   },
-  svg: {
+  needleWrapper: {
+    position: "absolute",
+    width: 50,
+    height: 60,
     zIndex: 3,
   },
 });
