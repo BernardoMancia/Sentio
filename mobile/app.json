@@ -19,7 +19,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a0a0f"
       },
-      "package": "com.apptriste.app",
+      "package": "com.sentio.app",
       "permissions": [
         "NOTIFICATIONS"
       ]
